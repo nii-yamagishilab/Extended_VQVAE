@@ -1,0 +1,32 @@
+Traceback (most recent call last):
+  File "preprocess_f0.py", line 6, in <module>
+    from utils.dsp import *
+  File "/home/smg/zhaoyi/projects/emotion_enhancement/scripts/VC/VQVAE_F0/utils/dsp.py", line 2, in <module>
+    import librosa, math
+  File "/home/smg/zhaoyi/software/anaconda3/lib/python3.7/site-packages/librosa/__init__.py", line 12, in <module>
+    from . import core
+  File "/home/smg/zhaoyi/software/anaconda3/lib/python3.7/site-packages/librosa/core/__init__.py", line 123, in <module>
+    from .time_frequency import *  # pylint: disable=wildcard-import
+  File "/home/smg/zhaoyi/software/anaconda3/lib/python3.7/site-packages/librosa/core/time_frequency.py", line 11, in <module>
+    from ..util.exceptions import ParameterError
+  File "/home/smg/zhaoyi/software/anaconda3/lib/python3.7/site-packages/librosa/util/__init__.py", line 77, in <module>
+    from .utils import *  # pylint: disable=wildcard-import
+  File "/home/smg/zhaoyi/software/anaconda3/lib/python3.7/site-packages/librosa/util/utils.py", line 10, in <module>
+    import numba
+  File "/home/smg/zhaoyi/software/anaconda3/lib/python3.7/site-packages/numba/__init__.py", line 29, in <module>
+    from .decorators import autojit, cfunc, generated_jit, jit, njit, stencil
+  File "/home/smg/zhaoyi/software/anaconda3/lib/python3.7/site-packages/numba/decorators.py", line 12, in <module>
+    from .targets import registry
+  File "/home/smg/zhaoyi/software/anaconda3/lib/python3.7/site-packages/numba/targets/registry.py", line 5, in <module>
+    from . import cpu
+  File "/home/smg/zhaoyi/software/anaconda3/lib/python3.7/site-packages/numba/targets/cpu.py", line 11, in <module>
+    from .base import BaseContext, PYOBJECT
+  File "/home/smg/zhaoyi/software/anaconda3/lib/python3.7/site-packages/numba/targets/base.py", line 21, in <module>
+    from . import arrayobj, builtins, imputils
+  File "<frozen importlib._bootstrap>", line 983, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 967, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 677, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 724, in exec_module
+  File "<frozen importlib._bootstrap_external>", line 857, in get_code
+  File "<frozen importlib._bootstrap_external>", line 525, in _compile_bytecode
+KeyboardInterrupt
