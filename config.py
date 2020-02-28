@@ -12,12 +12,12 @@ ref_level_db = 20
 fmin = 0
 fmax = 8000
 upsample_factors = (4, 4, 4)
-checkpoint_dir = "nancy_mels-librosa_checkpoints"
-output_dir="nancy_mels-librosa_output"
-batch_size=2
+checkpoint_dir = "checkpoints"
+output_dir="output"
+batch_size=210
 rnn_dims=1024
 fc_dims=1024
-lr=1e-4
+lr=1e-3
 num_bit = 16
 num_epochs = 2000
 

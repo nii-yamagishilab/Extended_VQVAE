@@ -60,7 +60,7 @@ class DownsamplingEncoder(nn.Module):
             #logger.log(f'sd[act] {x2.std()}')
             x3 = conv_1x1(x2)
             #logger.log(f'sd[conv.1] {x3.std()}')
-            print(x.shape, x3.shape, 'downsampling 0')
+            # print(x.shape, x3.shape, 'downsampling 0')
             if i == 0:
                 x = x3
             else:
@@ -68,5 +68,5 @@ class DownsamplingEncoder(nn.Module):
             #logger.log(f'sd[out] {x.std()}')
         x = self.final_conv_1(F.relu(self.final_conv_0(x)))
         #logger.log(f'sd[final] {x.std()}')
-        print(x.shape, 'downsampling')
+        # print(x.shape, 'downsampling')
         return x.transpose(1, 2)

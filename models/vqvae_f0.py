@@ -9,23 +9,27 @@ import torch.nn.functional as F
 from utils.dsp import *
 import sys
 import time
-from layers.overtone import Overtone
+from layers.overtone import Overtone, Overtone_f0
 from layers.vector_quant import VectorQuant
 from layers.downsampling_encoder import DownsamplingEncoder
 import utils.env as env
 import utils.logger as logger
 import random
 from layers.upsample import UpsampleNetwork_F0
+import pytorch_warmup as warmup
 
 class Model(nn.Module) :
     def __init__(self, rnn_dims, fc_dims, global_decoder_cond_dims, upsample_factors, normalize_vq=False,
             noise_x=False, noise_y=False):
         super().__init__()
-        self.n_classes = 256
+        self.n_classes = 512
+        self.vec_len = 128
+        # self.channel_f0 = 128
         self.upsample = UpsampleNetwork_F0(upsample_factors)
-        self.overtone = Overtone(rnn_dims, fc_dims, 128, global_decoder_cond_dims)
-        self.vq = VectorQuant(1, 512, 128, normalize=normalize_vq)
-        self.vq_f0 = VectorQuant(1, 512, 128, normalize=normalize_vq)
+        #n_channels, n_classes, vec_len, normalize=False
+
+        self.vq = VectorQuant(1, self.n_classes, self.vec_len, normalize=normalize_vq)
+        self.vq_f0 = VectorQuant(1, self.n_classes, self.vec_len, normalize=normalize_vq)
         self.noise_x = noise_x
         self.noise_y = noise_y
         encoder_layers_wave = [
@@ -50,10 +54,14 @@ class Model(nn.Module) :
             (2, 4, 1),
             (1, 4, 1),
             (2, 4, 1),
+            (1, 4, 1),
+            # (2, 4, 1),
+            # (1, 4, 1),
             ]
         self.encoder_f0 = DownsamplingEncoder(128, encoder_layers_f0)
         self.frame_advantage = 15
         self.num_params()
+        self.overtone = Overtone_f0(rnn_dims, fc_dims,self.vec_len*2, global_decoder_cond_dims)
 
     def forward(self, global_decoder_cond, x, samples, f0):  ##speaker , input_audio , noise+input_samples
         # x: (N, 768, 3)
@@ -62,21 +70,24 @@ class Model(nn.Module) :
         #logger.log(f'samples: {samples.size()}')
         continuous = self.encoder(samples)
 
-        f0_cond = self.upsample(f0)
-        continuous_f0 = self.encoder_f0 (f0_cond)
+        f0_upsampled = self.upsample(f0)
+
+        continuous_f0 = self.encoder_f0 (f0_upsampled)
         # continuous: (N, 14, 64)
         #logger.log(f'continuous: {continuous.size()}')
         discrete, vq_pen, encoder_pen, entropy = self.vq(continuous.unsqueeze(2))
         discrete_f0, vq_pen_f0, encoder_pen_f0, entropy_f0 = self.vq_f0(continuous_f0.unsqueeze(2))
-        # discrete: (N, 14, 1, 64)
-        #logger.log(f'discrete: {discrete.size()}')
 
-        # cond: (N, 768, 64)
-        #logger.log(f'cond: {cond.size()}')
-        print(discrete.shape, discrete_f0.shape, 'discrete')
-        code = concate(discrete.squeeze(2), discrete_f0.squeeze(2))
-        return self.overtone(x, code, global_decoder_cond), vq_pen.mean(), \
-                encoder_pen.mean(), entropy, discrete_f0, vq_pen_f0, encoder_pen_f0, entropy_f0
+        discrete = discrete.squeeze(2)
+        code_x = discrete
+
+        discrete_f0 = discrete_f0.squeeze(2)
+        n_repeat = int(code_x.shape[1]/discrete_f0.shape[1])
+        code_f0 = discrete_f0.repeat (1, n_repeat + 1, 1)[:,:discrete.shape[1],:]
+        codes = torch.cat((code_x, code_f0) , dim=2 )
+
+        return self.overtone(x, codes, global_decoder_cond), vq_pen.mean(), \
+                encoder_pen.mean(), entropy, vq_pen_f0.mean(), encoder_pen_f0.mean(), entropy_f0
 
     def after_update(self):
         self.overtone.after_update()
@@ -96,7 +107,8 @@ class Model(nn.Module) :
             logger.log(f'entropy: {entropy}')
             # cond: (1, L1, 64)
             #logger.log(f'cond: {cond.size()}')
-            output = self.overtone.generate(concate(discrete.squeeze(2), discrete_f0.squeeze(2)), global_decoder_cond, use_half=use_half, verbose=verbose)
+            codes = torch.cat((discrete.squeeze(2), discrete_f0.squeeze(2)), 1)
+            output = self.overtone.generate(codes, global_decoder_cond, use_half=use_half, verbose=verbose)
 
         self.train()
         return output
@@ -161,6 +173,7 @@ class Model(nn.Module) :
         saved_k = 0
         pad_left = self.pad_left()
         pad_left_encoder = self.pad_left_encoder()
+        pad_left_decoder = self.pad_left_decoder()
         if self.noise_x:
             extra_pad_right = 127
         else:
@@ -227,6 +240,7 @@ class Model(nn.Module) :
                     fine_f[:, pad_left-pad_left_decoder:-pad_right].unsqueeze(-1),
                     coarse_f[:, pad_left-pad_left_decoder+1:1-pad_right].unsqueeze(-1),
                     ], dim=2)
+
                 y_coarse = coarse[:, pad_left+1:1-pad_right]
                 y_fine = fine[:, pad_left+1:1-pad_right]
 
@@ -241,12 +255,16 @@ class Model(nn.Module) :
                     translated = torch.stack(translated, dim=0)
                 else:
                     translated = noisy_f[:, pad_left-pad_left_encoder:]
-                p_cf, vq_pen, encoder_pen, entropy = self(global_cond, x, translated, f0)
+                    #global_decoder_cond, x, samples, f0
+                #self.overtone(x, codes, global_decoder_cond), vq_pen.mean(), \
+                        #encoder_pen.mean(), entropy, vq_pen_f0.mean(), encoder_pen_f0.mean(), entropy_f0
+                p_cf, vq_pen, encoder_pen, entropy, vq_pen_f0, encoder_pen_f0, entropy_f0 = self(global_cond, x, translated, f0)
                 p_c, p_f = p_cf
                 loss_c = criterion(p_c.transpose(1, 2).float(), y_coarse)
                 loss_f = criterion(p_f.transpose(1, 2).float(), y_fine)
                 encoder_weight = 0.01 * min(1, max(0.1, step / 1000 - 1))
-                loss = loss_c + loss_f + vq_pen + encoder_weight * encoder_pen + vq_pen_f0 + encoder_weight_f0 * encoder_pen_f0
+
+                loss = loss_c + loss_f + vq_pen + encoder_weight * encoder_pen + vq_pen_f0 + encoder_weight * encoder_pen_f0
 
                 optimiser.zero_grad()
                 if use_half:
@@ -309,7 +327,10 @@ class Model(nn.Module) :
 
                 step += 1
                 k = step // 1000
-                logger.status(f'Epoch: {e+1}/{epochs} -- Batch: {i+1}/{iters} -- Loss: c={avg_loss_c:#.4} f={avg_loss_f:#.4} vq={avg_loss_vq:#.4} vqc={avg_loss_vqc:#.4} -- Entropy: {avg_entropy:#.4} -- Grad: {running_max_grad:#.1} {running_max_grad_name} Speed: {speed:#.4} steps/sec -- Step: {k}k ')
+                logger.status(f'Epoch: {e+1}/{epochs} -- Batch: {i+1}/{iters} '
+f'-- Loss: c={avg_loss_c:#.4} f={avg_loss_f:#.4} vq={avg_loss_vq:#.4} vqc={avg_loss_vqc:#.4} '
+f' vq_f0={avg_loss_vq_f0:#.4} vqc_f0={avg_loss_vqc_f0:#.4}  -- Entropy: {avg_entropy:#.4} -- Entropy_f0: {avg_entropy_f0:#.4} '
+f'-- Grad: {running_max_grad:#.1} {running_max_grad_name} Speed: {speed:#.4} steps/sec -- Step: {k}k ')
 
             os.makedirs(paths.checkpoint_dir, exist_ok=True)
             torch.save(self.state_dict(), paths.model_path())

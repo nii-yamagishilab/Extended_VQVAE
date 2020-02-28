@@ -142,22 +142,22 @@ def collate_emo_samples(left_pad, window, right_pad, batch):
     #print(f0[0].shape, 111)
 
     max_offsets = [x.shape[-1] - window for x in samples]
-    print(max_offsets, 'mo')
+    # print(max_offsets, 'mo')
     f0_offsets = [np.random.randint(0, float(offset/config.hop_length)) for offset in max_offsets]
     sig_offsets = [np.random.randint(0, offset) for offset in max_offsets]
-    print(f0_offsets, 'f0 off')
+    # print(f0_offsets, 'f0 off')
     f0 = [x[f0_offsets[i]:f0_offsets[i] + int(window/config.hop_length)] for i, x in enumerate(f0)]
     # print([len(x) for x in f0], len(f0))
     f0 = np.stack(f0).astype(np.float32)
-    print(samples[0].shape, 'collate samples')
-    print(window, left_pad, right_pad)
+    # print(samples[0].shape, 'collate samples')
+    # print(window, left_pad, right_pad)
     wave16 = [np.concatenate([np.zeros(left_pad, dtype=np.int16), x, np.zeros(right_pad, dtype=np.int16)])[sig_offsets[i]:sig_offsets[i] + left_pad + window + right_pad] for i, x in enumerate(samples)]
 
     wave16 = torch.LongTensor(np.stack(wave16).astype(np.int64))
     f0 = torch.FloatTensor(f0)
     global_cond = torch.FloatTensor(global_cond)
 
-    print(wave16.shape, f0.shape, 'collate f0')
+    # print(wave16.shape, f0.shape, 'collate f0')
 
     return wave16, f0, global_cond
 

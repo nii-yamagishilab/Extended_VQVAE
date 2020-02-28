@@ -146,10 +146,12 @@ class Model(nn.Module) :
         window = 16 * self.total_scale()
         logger.log(f'pad_left={pad_left_encoder}|{pad_left_decoder}, pad_right={pad_right}, total_scale={self.total_scale()}')
 
+        # from haoyu: slow start for the first 10 epochs
         lr_lambda = lambda epoch: min((epoch) / 10 , 1)
         lr_scheduler = torch.optim.lr_scheduler.LambdaLR(optimiser, lr_lambda=lr_lambda)
-    #    warmup_scheduler = warmup.UntunedLinearWarmup(optimiser)
-    #    warmup_scheduler.last_step = -1
+        ## warmup is useful !!!
+        # warmup_scheduler = warmup.UntunedLinearWarmup(optimiser)
+        # warmup_scheduler.last_step = -1
 
         for e in range(epochs) :
 
@@ -248,7 +250,11 @@ class Model(nn.Module) :
                             torch.save(self.state_dict(), "bad_model.pyt")
                             raise RuntimeError("Aborting due to crazy gradient (model saved to bad_model.pyt)")
                 optimiser.step()
-                lr_scheduler.step()
+                if e==0 and i==0:
+                     lr_scheduler.step()
+                     print("schedulre!")
+                # lr_scheduler.step()
+                # warmup_scheduler.dampen()
                 running_loss_c += loss_c.item()
                 running_loss_f += loss_f.item()
                 running_loss_vq += vq_pen.item()
