@@ -131,7 +131,7 @@ else:
     step = env.restore(prev_path, model)
 
 #model.freeze_encoder()
-optimiser = optim.Adam(model.parameters(), betas=(0.9, 0.999), weight_decay=0.01)
+optimiser = optim.AdamW(model.parameters(), betas=(0.9, 0.999), weight_decay=0.01)
 
 
 if args.generate:
