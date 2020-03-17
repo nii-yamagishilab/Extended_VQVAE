@@ -56,9 +56,8 @@ wav_files = get_files(SEG_PATH)
 
 def convert_file(path) :
     wav = load_wav(path, encode=False)
-#    mel = melspectrogram(wav)
+    mel = melspectrogram(wav)
     quant = wav * (2**15 - 0.5) - 0.5
-    mel = wav
     return mel.astype(np.float32), quant.astype(np.int16)
 
 
