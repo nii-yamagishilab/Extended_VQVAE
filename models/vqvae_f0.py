@@ -17,19 +17,22 @@ import utils.logger as logger
 import random
 from layers.upsample import UpsampleNetwork_F0
 import pytorch_warmup as warmup
+import config
 
 class Model(nn.Module) :
     def __init__(self, rnn_dims, fc_dims, global_decoder_cond_dims, upsample_factors, normalize_vq=False,
             noise_x=False, noise_y=False):
         super().__init__()
-        self.n_classes = 512
+        self.n_vq_classes = 512
+        self.n_f0_classes = 128
         self.vec_len = 128
         # self.channel_f0 = 128
-        self.upsample = UpsampleNetwork_F0(upsample_factors)
+        #self.upsample = UpsampleNetwork_F0(upsample_factors)
         #n_channels, n_classes, vec_len, normalize=False
 
-        self.vq = VectorQuant(1, self.n_classes, self.vec_len, normalize=normalize_vq)
-        self.vq_f0 = VectorQuant(1, self.n_classes, self.vec_len, normalize=normalize_vq)
+        self.vq = VectorQuant(1, self.n_vq_classes, self.vec_len, normalize=normalize_vq)
+        self.vq_f0 = VectorQuant(1, self.n_f0_classes, self.vec_len, normalize=normalize_vq)
+        #self.vq_f0 = VectorQuant(1, self.n_classes_f0, self.vec_len, normalize=normalize_vq)
         self.noise_x = noise_x
         self.noise_y = noise_y
         encoder_layers_wave = [
@@ -55,8 +58,8 @@ class Model(nn.Module) :
             (1, 4, 1),
             (2, 4, 1),
             (1, 4, 1),
-            # (2, 4, 1),
-            # (1, 4, 1),
+            (2, 4, 1),
+            (1, 4, 1),
             ]
         self.encoder_f0 = DownsamplingEncoder(128, encoder_layers_f0)
         self.frame_advantage = 15
@@ -70,9 +73,10 @@ class Model(nn.Module) :
         #logger.log(f'samples: {samples.size()}')
         continuous = self.encoder(samples)
 
-        f0_upsampled = self.upsample(f0)
+        #f0_upsampled = self.upsample(f0)
 
-        continuous_f0 = self.encoder_f0 (f0_upsampled)
+        #continuous_f0 = self.encoder_f0 (f0_upsampled)
+        continuous_f0 = self.encoder_f0 (f0)
         # continuous: (N, 14, 64)
         #logger.log(f'continuous: {continuous.size()}')
         discrete, vq_pen, encoder_pen, entropy = self.vq(continuous.unsqueeze(2))
@@ -93,21 +97,34 @@ class Model(nn.Module) :
         self.overtone.after_update()
         self.vq.after_update()
 
-    def forward_generate(self, global_decoder_cond, samples, deterministic=False, use_half=False, verbose=False):
+    def forward_generate(self, global_decoder_cond, samples, f0, deterministic=False, use_half=False, verbose=False):
         if use_half:
             samples = samples.half()
         # samples: (L)
         #logger.log(f'samples: {samples.size()}')
         self.eval()
         with torch.no_grad() :
+
             continuous = self.encoder(samples)
-            continuous_f0 = self.encoder_f0(f0)
+
+        #    f0_upsampled = self.upsample(f0)
+
+        #    continuous_f0 = self.encoder_f0 (f0_upsampled)
+            continuous_f0 = self.encoder_f0 (f0)
+            # continuous: (N, 14, 64)
+            #logger.log(f'continuous: {continuous.size()}')
             discrete, vq_pen, encoder_pen, entropy = self.vq(continuous.unsqueeze(2))
             discrete_f0, vq_pen_f0, encoder_pen_f0, entropy_f0 = self.vq_f0(continuous_f0.unsqueeze(2))
+
+            discrete = discrete.squeeze(2)
+            code_x = discrete
+
+            discrete_f0 = discrete_f0.squeeze(2)
+            n_repeat = int(code_x.shape[1]/discrete_f0.shape[1])
+            code_f0 = discrete_f0.repeat (1, n_repeat + 1, 1)[:,:discrete.shape[1],:]
+            codes = torch.cat((code_x, code_f0) , dim=2 )
+
             logger.log(f'entropy: {entropy}')
-            # cond: (1, L1, 64)
-            #logger.log(f'cond: {cond.size()}')
-            codes = torch.cat((discrete.squeeze(2), discrete_f0.squeeze(2)), 1)
             output = self.overtone.generate(codes, global_decoder_cond, use_half=use_half, verbose=verbose)
 
         self.train()
@@ -182,16 +199,18 @@ class Model(nn.Module) :
         window = 16 * self.total_scale()
         logger.log(f'pad_left={pad_left_encoder}|{pad_left_decoder}, pad_right={pad_right}, total_scale={self.total_scale()}')
 
-        #lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[num_epochs//3], gamma=0.1)
-        lr_lambda = lambda epoch: min((epoch) / 10 , 1)
+        #lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimiser, milestones=[num_epochs//3], gamma=0.1)
+        lr_lambda = lambda epoch: min((epoch) / 100 , 1)
         lr_scheduler = torch.optim.lr_scheduler.LambdaLR(optimiser, lr_lambda=lr_lambda)
-        warmup_scheduler = warmup.UntunedLinearWarmup(optimiser)
-        warmup_scheduler.last_step = -1
+        #lr_scheduler = torch.optim.lr_scheduler.OneCycleLR(optimiser, epochs=2000,
+        #         steps_per_epoch=149, max_lr=0.001)
+        #lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimiser, eta_min=0, T_max=2000)
+    #    warmup_scheduler = warmup.UntunedLinearWarmup(optimiser)
+    #    warmup_scheduler.last_step = -1
 
 
 
         for e in range(epochs) :
-
             trn_loader = DataLoader(dataset, collate_fn=lambda batch: env.collate_emo_samples(pad_left, window, pad_right, batch), batch_size=batch_size,
                                     num_workers=2, shuffle=True, pin_memory=True)
 
@@ -263,8 +282,9 @@ class Model(nn.Module) :
                 loss_c = criterion(p_c.transpose(1, 2).float(), y_coarse)
                 loss_f = criterion(p_f.transpose(1, 2).float(), y_fine)
                 encoder_weight = 0.01 * min(1, max(0.1, step / 1000 - 1))
-
-                loss = loss_c + loss_f + vq_pen + encoder_weight * encoder_pen + vq_pen_f0 + encoder_weight * encoder_pen_f0
+                # weight_f0 = e / 10.0
+                weight_f0 = 100
+                loss = loss_c + loss_f + vq_pen + encoder_weight * encoder_pen + (vq_pen_f0 + encoder_weight * encoder_pen_f0) * weight_f0
 
                 optimiser.zero_grad()
                 if use_half:
@@ -301,7 +321,7 @@ class Model(nn.Module) :
                             raise RuntimeError("Aborting due to crazy gradient (model saved to bad_model.pyt)")
                 optimiser.step()
                 lr_scheduler.step()
-                warmup_scheduler.dampen()
+            #    warmup_scheduler.dampen()
                 running_loss_c += loss_c.item()
                 running_loss_f += loss_f.item()
                 running_loss_vq += vq_pen.item()
@@ -327,34 +347,35 @@ class Model(nn.Module) :
 
                 step += 1
                 k = step // 1000
-                logger.status(f'Epoch: {e+1}/{epochs} -- Batch: {i+1}/{iters} '
-f'-- Loss: c={avg_loss_c:#.4} f={avg_loss_f:#.4} vq={avg_loss_vq:#.4} vqc={avg_loss_vqc:#.4} '
-f' vq_f0={avg_loss_vq_f0:#.4} vqc_f0={avg_loss_vqc_f0:#.4}  -- Entropy: {avg_entropy:#.4} -- Entropy_f0: {avg_entropy_f0:#.4} '
-f'-- Grad: {running_max_grad:#.1} {running_max_grad_name} Speed: {speed:#.4} steps/sec -- Step: {k}k ')
 
+            logger.status(f'Epoch:{e+1}/{epochs}--Batch:{i+1}/{iters}--Loss:c={avg_loss_c:#.4} f={avg_loss_f:#.4} vq={avg_loss_vq:#.4} vqc={avg_loss_vqc:#.4} vq_f0={avg_loss_vq_f0:#.4} vqc_f0={avg_loss_vqc_f0:#.4}  -- Entropy: {avg_entropy:#.4} -- Entropy_f0:{avg_entropy_f0:#.4}  -- Grad:{running_max_grad:#.1} {running_max_grad_name} Speed:{speed:#.4} steps/sec -- Step: {k}k ')
             os.makedirs(paths.checkpoint_dir, exist_ok=True)
             torch.save(self.state_dict(), paths.model_path())
             np.save(paths.step_path(), step)
             logger.log_current_status()
             logger.log(f' <saved>; w[0][0] = {self.overtone.wavernn.gru.weight_ih_l0[0][0]}')
-            if k > saved_k + 50:
-                torch.save(self.state_dict(), paths.model_hist_path(step))
+
+            torch.save(self.state_dict(), paths.model_hist_path(step))
+            if k > saved_k + 100:
                 saved_k = k
                 self.do_generate(paths, step, dataset.path, valid_index)
 
     def do_generate(self, paths, step, data_path, test_index, deterministic=False, use_half=False, verbose=False):
         k = step // 1000
-        dataset = env.MultispeakerDataset(test_index, data_path)
+        dataset = env.EmospeakerDataset(test_index, data_path, config.gender_emo_path, config.spk_emd_path)
         loader = DataLoader(dataset, shuffle=False)
         data = [x for x in loader]
         n_points = len(data)
-        gt = [(x[0].float() + 0.5) / (2**15 - 0.5) for speaker, x in data]
+        gt = [(x[0].float() + 0.5) / (2**15 - 0.5) for x, f0, global_cond in data]
         extended = [np.concatenate([np.zeros(self.pad_left_encoder(), dtype=np.float32), x, np.zeros(self.pad_right(), dtype=np.float32)]) for x in gt]
-        speakers = [torch.FloatTensor(speaker[0].float()) for speaker, x in data]
+
+        f0s = [torch.FloatTensor(f0[0].float()) for x, f0, global_cond in data]
+        global_conds = [torch.FloatTensor(global_cond[0].float()) for x, f0, global_cond in data]
         maxlen = max([len(x) for x in extended])
         aligned = [torch.cat([torch.FloatTensor(x), torch.zeros(maxlen-len(x))]) for x in extended]
         os.makedirs(paths.gen_path(), exist_ok=True)
-        out = self.forward_generate(torch.stack(speakers + list(reversed(speakers)), dim=0).cuda(), torch.stack(aligned + aligned, dim=0).cuda(), verbose=verbose, use_half=use_half)
+        #global_decoder_cond, samples, f0,
+        out = self.forward_generate(torch.stack(global_conds + list(reversed(global_conds)), dim=0).cuda(), torch.stack(aligned + aligned, dim=0).cuda(),  torch.stack(f0s + f0s, dim=0).cuda(),verbose=verbose, use_half=use_half)
         logger.log(f'out: {out.size()}')
         for i, x in enumerate(gt) :
             librosa.output.write_wav(f'{paths.gen_path()}/{k}k_steps_{i}_target.wav', x.cpu().numpy(), sr=sample_rate)
