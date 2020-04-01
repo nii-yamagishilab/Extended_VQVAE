@@ -8,7 +8,6 @@ import config
 import pandas as pd
 
 bits = 16
-seq_len = config.hop_length * 5
 
 class Paths:
     def __init__(self, name, data_dir, checkpoint_dir=config.checkpoint_dir, output_dir=config.output_dir):
@@ -82,6 +81,10 @@ class EmospeakerDataset(Dataset):
         utt = self.all_utts[index]
         audio = np.load(f'{self.path}/quant/{utt}.npy')
         f0 = np.load(f'{self.path}/f0/{utt}.npy')
+        # if np.amax(f0) == 0:
+        #     print(f'{self.path}/f0/{utt}.npy')
+        #     exit ()
+        f0 = (f0 - np.amin(f0))/(np.amax(f0)+0.01) ##f0 normalize to exclude speaker information
         gd = self.gender_dict[self.df_gender_emo[self.df_gender_emo['utt'] == utt]['gender'].values[-1]]
         emod = self.emo_dict[self.df_gender_emo[self.df_gender_emo['utt'] == utt]['emotion'].values[-1]]
         spk = utt.split('_')[1]
@@ -139,25 +142,37 @@ def collate_emo_samples(left_pad, window, right_pad, batch):
     samples = [x[0] for x in batch]
     f0 = [x[1] for x in batch]
     global_cond = [x[2] for x in batch]
-    #print(f0[0].shape, 111)
+    #print(samples[0].shape,'sample shape')
+    #print(f0[0].shape,'sample shape 1')
 
     max_offsets = [x.shape[-1] - window for x in samples]
-    # print(max_offsets, 'mo')
-    f0_offsets = [np.random.randint(0, float(offset/config.hop_length)) for offset in max_offsets]
     sig_offsets = [np.random.randint(0, offset) for offset in max_offsets]
+    # print(max_offsets, 'mo')
+    #f0_offsets = [np.random.randint(0, float(offset/config.hop_length)) for offset in max_offsets]
+    f0_offsets = [int(offset/config.hop_length) for offset in sig_offsets]
+    # make f0 aligned with wav
+    #print(f0[0].shape, 'before repeat')
+    f0 = [np.repeat(x, config.hop_length) for i, x in enumerate(f0)]
+    #print(f0[0].shape, 'after repeat f0 shape')
+
     # print(f0_offsets, 'f0 off')
-    f0 = [x[f0_offsets[i]:f0_offsets[i] + int(window/config.hop_length)] for i, x in enumerate(f0)]
+    # print(sig_offsets, 'sig off')
+    # attach one more frames' F0. after 1
+    # f0 = [x[f0_offsets[i]:f0_offsets[i] + int( window /config.hop_length)+1] for i, x in enumerate(f0)]
+    f0 = [np.concatenate([np.zeros(left_pad, dtype=np.int16), x, np.zeros(right_pad, dtype=np.int16)])[sig_offsets[i]:sig_offsets[i] + left_pad + window + right_pad] for i, x in enumerate(f0)]
     # print([len(x) for x in f0], len(f0))
-    f0 = np.stack(f0).astype(np.float32)
-    # print(samples[0].shape, 'collate samples')
+    #f0 = np.stack(f0).astype(np.float32)
+    #print(samples[0].shape, 'collate samples')
     # print(window, left_pad, right_pad)
+    #print(f0[0].shape, 'f0 shape 2')
     wave16 = [np.concatenate([np.zeros(left_pad, dtype=np.int16), x, np.zeros(right_pad, dtype=np.int16)])[sig_offsets[i]:sig_offsets[i] + left_pad + window + right_pad] for i, x in enumerate(samples)]
-
+    #print(wave16[0].shape, 'wave16 shape 2')
     wave16 = torch.LongTensor(np.stack(wave16).astype(np.int64))
-    f0 = torch.FloatTensor(f0)
+    #f0 = torch.FloatTensor(f0)
+    f0 = torch.FloatTensor(np.stack(f0))
     global_cond = torch.FloatTensor(global_cond)
+    #print(wave16.shape, f0.shape, 'collate f0')
 
-    # print(wave16.shape, f0.shape, 'collate f0')
 
     return wave16, f0, global_cond
 
@@ -174,14 +189,16 @@ def restore(path, model):
 if __name__ == '__main__':
     import pickle
     from torch.utils.data import DataLoader
-    DATA_PATH = '/home/smg/zhaoyi/projects/emotion_enhancement/data/preprocessed_data'
+    DATA_PATH = '/home/smg/zhaoyi/projects/emotion_enhancement/data/preprocessed_data_f0c'
     with open(f'{DATA_PATH}/index.pkl', 'rb') as f:
         index = pickle.load(f)
     gender_emo_path = config.gender_emo_path
     spk_emd_path = config.spk_emd_path
         #def __init__(self, train_index, path, gender_emo_path, spk_emd_path):
+    print(config.hop_length, 'hop_length')
     dataset = EmospeakerDataset(index, DATA_PATH, gender_emo_path, spk_emd_path)
     loader = DataLoader(dataset, collate_fn=lambda batch: collate_emo_samples(0, 16, 0, batch), batch_size=2,
                             num_workers=2, shuffle=True, pin_memory=True)
+
     for x in loader:
         pass
