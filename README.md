@@ -8,4 +8,4 @@ We reconstructed the speech using both original VQVAE()  and F0 encoder().
 
 # Acknowledgement
 
-The code is based on mkotha/WaveRNN[link](https://github.com/mkotha/WaveRNN)
+The code is based on [mkotha/WaveRNN](https://github.com/mkotha/WaveRNN)
