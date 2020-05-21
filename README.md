@@ -7,8 +7,8 @@ We reconstructed the speech using both [original VQVAE](https://arxiv.org/abs/17
 Please find our samples [here](https://nii-yamagishilab.github.io/yi-demo/interspeech-2020/index.html).
 
 # Usage
-./run.sh 
-
+./run.sh    
+(will add more information here)
 # Trained models
 1. Japanese 
 - Extended VQVAE:[checkpoints/jp_vcf0.43.upconv.pyt](https://github.com/nii-yamagishilab/VC_VQVAE/blob/master/checkpoints/jp_vcf0.43.upconv.pyt)
