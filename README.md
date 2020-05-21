@@ -9,9 +9,13 @@ Please find our samples [here](https://nii-yamagishilab.github.io/yi-demo/inters
 # Usage
 
 # Trained models
-1. Japanese : [original VQVAE]  [extended VQVAE]
-2. Chinese: original VQVAE: [checkpoints/ch_vqvae.43.upconv.pyt](https://github.com/nii-yamagishilab/VC_VQVAE/blob/master/checkpoints/ch_vqvae.43.upconv.pyt)       
-            extended VQVAE:[checkpoints/ch_vqvae.43.upconv.pyt](https://github.com/nii-yamagishilab/VC_VQVAE/blob/master/checkpoints/ch_vcf0.43.upconv.pyt)      
+1. Japanese 
+- Extended VQVAE:[checkpoints/jp_vcf0.43.upconv.pyt](https://github.com/nii-yamagishilab/VC_VQVAE/blob/master/checkpoints/jp_vcf0.43.upconv.pyt)
+- Original VQVAE:[checkpoints/jp_vqvae.43.upconv.pyt](https://github.com/nii-yamagishilab/VC_VQVAE/blob/master/checkpoints/jp_vqvae.43.upconv.pyt)
+           
+2. Chinese
+ - Original VQVAE: [checkpoints/ch_vqvae.43.upconv.pyt](https://github.com/nii-yamagishilab/VC_VQVAE/blob/master/checkpoints/ch_vqvae.43.upconv.pyt)       
+- Extended VQVAE:[checkpoints/ch_vcf0.43.upconv.pyt](https://github.com/nii-yamagishilab/VC_VQVAE/blob/master/checkpoints/ch_vcf0.43.upconv.pyt)      
 
 
 # Acknowledgement
