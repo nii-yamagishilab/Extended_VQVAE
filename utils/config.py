@@ -1,3 +1,8 @@
+# ==============================================================================
+# Copyright (c) 2020, Yamagishi Laboratory, National Institute of Informatics
+# Author: Yi Zhao (zhaoyi@nii.ac.jp)
+# All rights reserved.
+# ==============================================================================
 emo_data_path = '/home/smg/zhaoyi/projects/emotion_enhancement/data/preprocessed_data'
 gender_emo_path = '/home/smg/zhaoyi/projects/emotion_enhancement/data/scp/utt_gender_emotion.csv'
 spk_emd_path = '/home/smg/zhaoyi/projects/emotion_enhancement/data/scp/spk_ebd.csv'

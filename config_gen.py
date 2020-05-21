@@ -1,3 +1,10 @@
+# ==============================================================================
+# Copyright (c) 2020, Yamagishi Laboratory, National Institute of Informatics
+# Author: Yi Zhao (zhaoyi@nii.ac.jp)
+# All rights reserved.
+# ==============================================================================
+#
+#
 #test_files_txt ='/home/smg/zhaoyi/projects/neural_vocoder/wavernn_test/data/vctk_neural_vocoder/hop256/vctk_test.txt'
 #test_files_txt='vctk_copy_synthesis_text.txt'
 #test_files_txt='vctk_tts_test.txt'

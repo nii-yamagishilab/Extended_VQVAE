@@ -25,9 +25,28 @@ import re
 import utils.logger as logger
 import time
 import subprocess
-import pytorch_warmup as warmup
+import torch.distributed as dist
 import config
-import models.vqvae_f0 as vqvae_f0
+from torch.nn.parallel import DistributedDataParallel as DDP
+
+os.environ["CUDA_VISIBLE_DEVICES"]="0, 1,2,3"
+
+# def setup(rank, world_size):
+#     os.environ['MASTER_ADDR'] = 'localhost'
+#     os.environ['MASTER_PORT'] = '12355'
+#     os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
+#
+#
+#     # initialize the process group
+#     dist.init_process_group("gloo", rank=rank, world_size=world_size)
+#
+#     # Explicitly setting seed to make sure that models created in two processes
+#     # start from same random weights and biases.
+#     torch.manual_seed(42)
+
+
+def cleanup():
+    dist.destroy_process_group()
 
 parser = argparse.ArgumentParser(description='Train or run some neural net')
 parser.add_argument('--generate', '-g', action='store_true')
@@ -37,7 +56,7 @@ parser.add_argument('--load', '-l')
 parser.add_argument('--scratch', action='store_true')
 parser.add_argument('--model', '-m')
 parser.add_argument('--force', action='store_true', help='skip the version check')
-parser.add_argument('--count', '-c', type=int, default=1, help='size of the test set')
+parser.add_argument('--count', '-c', type=int, default=3, help='size of the test set')
 parser.add_argument('--partial', action='append', default=[], help='model to partially load')
 args = parser.parse_args()
 
@@ -56,25 +75,16 @@ model_type = args.model or 'vqvae'
 model_name = f'{model_type}.43.upconv'
 
 if model_type == 'vqvae':
-    model_fn = lambda dataset: vqvae.Model(rnn_dims=config.rnn_dims, fc_dims=config.fc_dims, global_decoder_cond_dims=dataset.num_speakers(),
-                  upsample_factors=config.upsample_factors, normalize_vq=True, noise_x=True, noise_y=True).cuda()
+    model_fn = lambda dataset: vqvae.Model(rnn_dims=896, fc_dims=896, global_decoder_cond_dims=dataset.num_speakers(),
+                  upsample_factors=(4, 4, 4), normalize_vq=True, noise_x=True, noise_y=True).cuda()
     dataset_type = 'multi'
 elif model_type == 'wavernn':
-    model_fn = lambda dataset: wr.Model(rnn_dims=config.rnn_dims, fc_dims=config.fc_dims, pad=2,
-                  upsample_factors=config.upsample_factors, feat_dims=80).cuda()
+    model_fn = lambda dataset: wr.Model(rnn_dims=896, fc_dims=896, pad=2,
+                  upsample_factors=(4, 4, 4), feat_dims=80).cuda()
     dataset_type = 'single'
 elif model_type == 'nc':
     model_fn = lambda dataset: nc.Model(rnn_dims=896, fc_dims=896).cuda()
     dataset_type = 'single'
-
-elif model_type == 'vcf0':
-    global_decoder_cond_dims = config.dim_speaker_embedding + config.dim_gender_code + config.dim_emotion_code
-    model_fn = lambda dataset: vqvae_f0.Model(rnn_dims=config.rnn_dims, fc_dims=config.fc_dims, global_decoder_cond_dims=global_decoder_cond_dims,
-                  upsample_factors=config.upsample_factors, normalize_vq=True, noise_x=True, noise_y=True).cuda()
-    dataset_type = 'emo'
-
-
-
 else:
     sys.exit(f'Unknown model: {model_type}')
 
@@ -89,28 +99,20 @@ elif dataset_type == 'single':
     data_path = config.single_speaker_data_path
     with open(f'{data_path}/dataset_ids.pkl', 'rb') as f:
         index = pickle.load(f)
-    test_index = index[-args.count:]
+    test_index = index[-args.count:] + index[:args.count]
     train_index = index[:-args.count]
     dataset = env.AudiobookDataset(train_index, data_path)
-elif dataset_type == 'emo':
-    data_path = config.emo_data_path
-    # with open(f'{data_path}/dataset_ids.pkl', 'rb') as f:
-    #     index = pickle.load(f)
-    # test_index = index[-args.count:]
-    # train_index = index[:-args.count]
-    with open(f'{data_path}/index.pkl', 'rb') as f:
-        index = pickle.load(f)
-    test_index = index[-args.count:]
-    train_index = index[:-args.count]
-    gender_emo_path = config.gender_emo_path
-    spk_emd_path = config.spk_emd_path
-    dataset = env.EmospeakerDataset(train_index, data_path, gender_emo_path, spk_emd_path)
 else:
     raise RuntimeError('bad dataset type')
 
 print(f'dataset size: {len(dataset)}')
-###############update line##################
+
 model = model_fn(dataset)
+
+device = ("cuda" if torch.cuda.is_available() else "cpu" )
+print(device)
+model = model.to(device)
+
 
 if use_half:
     model = model.half()
@@ -138,14 +140,17 @@ else:
     step = env.restore(prev_path, model)
 
 #model.freeze_encoder()
-optimiser = optim.AdamW(model.parameters(), betas=(0.9, 0.999), weight_decay=0.01)
 
+optimiser = optim.Adam(model.parameters())
+
+
+model = torch.nn.DataParallel(model, device_ids=[0,1,2,3])
 
 if args.generate:
-    model.do_generate(paths, step, data_path, test_index, use_half=use_half, verbose=True)#, deterministic=True)
+    model.module.do_generate(paths, step, data_path, test_index, use_half=use_half, verbose=True)#, deterministic=True)
 else:
     logger.set_logfile(paths.logfile_path())
     logger.log('------------------------------------------------------------')
     logger.log('-- New training session starts here ------------------------')
     logger.log(time.strftime('%c UTC', time.gmtime()))
-    model.do_train(paths, dataset, optimiser, epochs=config.num_epochs, batch_size=config.batch_size, step=step, lr=config.lr, use_half=use_half, valid_index=test_index)
+    model.module.do_train(paths, dataset, optimiser, epochs=10000, batch_size=230, step=step, lr=1e-4, use_half=use_half, valid_index=test_index)

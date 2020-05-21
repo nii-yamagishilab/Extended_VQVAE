@@ -1,3 +1,10 @@
+# ==============================================================================
+# Copyright (c) 2020, Yamagishi Laboratory, National Institute of Informatics
+# Author: Yi Zhao (zhaoyi@nii.ac.jp)
+# All rights reserved.
+# ==============================================================================
+#
+#
 #single_speaker_data_path = '/home/smg/zhaoyi/projects/neural_vocoder/wavernn_test/data/vctk_neural_vocoder/hop256'
 single_speaker_data_path = '/home/smg/zhaoyi/projects/neural_vocoder/wavernn_test/data/vctk_neural_vocoder/waveglow'
 sample_rate = 22050
