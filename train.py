@@ -4,8 +4,8 @@
 # Modified: Yi Zhao (zhaoyi[at]nii.ac.jp)
 # All rights reserved.
 # ==============================================================================
-#
-#
+# This script is used to strat training.
+#==============================================================================
 import math, pickle, os
 import numpy as np
 import torch
