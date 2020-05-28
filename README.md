@@ -32,14 +32,6 @@ Please find our samples [here](https://nii-yamagishilab.github.io/yi-demo/inters
 
 # Trained models
 We can provide trained models for only research purpose.  We have trained models for both original VQVAE and extended VQVAE. Please contact the zhaoyi[email mark]nii.ac.jp if you want to get either Japanese or Chinese trained models. 
-[comment]: <> (1. Japanese 
-- Extended VQVAE:[checkpoints/jp_vcf0.43.upconv.pyt](https://github.com/nii-yamagishilab/VC_VQVAE/blob/master/checkpoints/jp_vcf0.43.upconv.pyt)
-- Original VQVAE:[checkpoints/jp_vqvae.43.upconv.pyt](https://github.com/nii-yamagishilab/VC_VQVAE/blob/master/checkpoints/jp_vqvae.43.upconv.pyt)
-           
-2. Chinese
-- Extended VQVAE:[checkpoints/ch_vcf0.43.upconv.pyt](https://github.com/nii-yamagishilab/VC_VQVAE/blob/master/checkpoints/ch_vcf0.43.upconv.pyt) 
- - Original VQVAE: [checkpoints/ch_vqvae.43.upconv.pyt](https://github.com/nii-yamagishilab/VC_VQVAE/blob/master/checkpoints/ch_vqvae.43.upconv.pyt)       
-)
 
 # Acknowledgement
 
