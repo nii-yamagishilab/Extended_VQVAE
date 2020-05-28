@@ -31,6 +31,12 @@ Please find our samples [here](https://nii-yamagishilab.github.io/yi-demo/inters
 
 Please install packages in requirement.txt before using the scripts.
 
+# Preprocessing
+1. extract F0. (We used [crepe](https://github.com/marl/crepe) to extract F0.  )
+2. F0 and Wavefrom Alignment
+3. converting F0 and waveform into *.npy format.
+
+
 # Usage
 Please use ./run.sh  when train an extended vavae model.
 
