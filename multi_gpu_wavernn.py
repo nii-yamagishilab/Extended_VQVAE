@@ -4,7 +4,7 @@
 # Modified: Yi Zhao (zhaoyi[at]nii.ac.jp)
 # All rights reserved.
 # ==============================================================================
-#
+#This is used for multi-gpu training
 #
 import math, pickle, os
 import numpy as np
