@@ -1,7 +1,7 @@
 # Extended_VQVAE
 This is a Pytorch implementation of extended VQVAE mentioned in [our paper](https://arxiv.org/abs/2005.07884).This paper introduces an important extension to VQ-VAE for learning F0-related suprasegmental infor- mation simultaneously along with traditional phone features. The proposed framework uses two encoders such that the F0 trajectory and speech waveform are both input to the system, there- fore two separate codebooks are learned.
 
-![Framework][https://github.com/nii-yamagishilab/Extended_VQVAE/blob/master/framework.png?raw=true]
+![Framework](https://github.com/nii-yamagishilab/Extended_VQVAE/blob/master/framework.png?raw=true)
 
 We reconstructed the speech using both [original VQVAE](https://arxiv.org/abs/1711.00937) and [F0 encoder](https://arxiv.org/abs/2005.07884). 
 
