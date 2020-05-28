@@ -13,6 +13,7 @@ In brief, we have done:
 2. Extend the global condition to speaker code, gender code, and emotion code. 
 3. Trained a model with multi-speaker & multi-emotional Japanese corpus.
 4. Trained a model with a public Chinese corpus.
+5. A parallel training script on multiple gpus.
 
 To do:
 1. Testing on voice conversion
