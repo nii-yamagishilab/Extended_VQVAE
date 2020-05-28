@@ -1,12 +1,22 @@
 # Extended_VQVAE
 This is a Pytorch implementation of extended VQVAE mentioned in [our paper](https://arxiv.org/abs/2005.07884).
 
-This paper introduces an important extension to VQ-VAE for learning F0-related suprasegmental infor- mation simultaneously along with traditional phone features. The proposed framework uses two encoders such that the F0 trajectory and speech waveform are both input to the system, there- fore two separate codebooks are learned.
+We introduce an important extension to VQ-VAE for learning F0-related suprasegmental information simultaneously along with traditional phone features. The proposed framework uses two encoders such that the F0 trajectory and speech waveform are both input to the system, therefore two separate codebooks are learned. 
 
 ![Framework of extended VQVAE](https://github.com/nii-yamagishilab/Extended_VQVAE/blob/master/framework.png?raw=true)
 
 We reconstructed the speech using both [original VQVAE](https://arxiv.org/abs/1711.00937) and extended VQVAE with [F0 encoder](https://arxiv.org/abs/2005.07884). 
 
+In brief, we have done:
+
+1. Extend the original VQ-VAE with an F0 encoder.
+2. Extend the global condition to speaker code, gender code, and emotion code. 
+3. Trained a model with multi-speaker & multi-emotional Japanese corpus.
+4. Trained a model with a public Chinese corpus.
+
+To do:
+1. Testing on voice conversion
+2. Testing on emotions' conversion
 
 # Authors 
 Authors of the paper: Yi Zhao,  Haoyu Li,  Cheng-I Lai, Jennifer Williams, Erica Cooper, Junichi Yamagishi
@@ -38,7 +48,7 @@ The code is based on [mkotha/WaveRNN](https://github.com/mkotha/WaveRNN)
 # License
 
 MIT License
-
+Copyright (c) 2019 fatchord (https://github.com/fatchord)
 Copyright (c) 2019 mkotha (https://github.com/mkotha)
 Copyright (c) 2020 YiAthena (https://github.com/YiAthena)
 Copyright (c) 2020, Yamagishi Laboratory, National Institute of Informatics.
