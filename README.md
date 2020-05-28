@@ -40,10 +40,10 @@ The code is based on [mkotha/WaveRNN](https://github.com/mkotha/WaveRNN)
 # License
 
 MIT License
-Copyright (c) 2019 fatchord (https://github.com/fatchord)
-Copyright (c) 2019 mkotha (https://github.com/mkotha)
-Copyright (c) 2020 YiAthena (https://github.com/YiAthena)
-Copyright (c) 2020, Yamagishi Laboratory, National Institute of Informatics.
+-Copyright (c) 2019 fatchord (https://github.com/fatchord)
+-Copyright (c) 2019 mkotha (https://github.com/mkotha)
+-Copyright (c) 2020 YiAthena (https://github.com/YiAthena)
+-Copyright (c) 2020, Yamagishi Laboratory, National Institute of Informatics.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
