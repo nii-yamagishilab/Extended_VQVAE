@@ -60,6 +60,9 @@ Please see [multi_gpu_wavernn.py](https://github.com/nii-yamagishilab/Extended_V
 
 The code is based on [mkotha/WaveRNN](https://github.com/mkotha/WaveRNN)
 
+Cheng-I is supported by the Merrill Lynch Fel- lowship, MIT. This work was partially supported by a JST CREST Grant (JPMJCR18A6, VoicePersonae project), Japan, and by MEXT KAKENHI Grants (16H06302, 18H04112, 18KT0051, 19K24373
+Japan. The numerical calculations were carried out on the TSUBAME 3.0 supercomputer at the Tokyo Institute of Technology.
+
 # License
 
 MIT License
