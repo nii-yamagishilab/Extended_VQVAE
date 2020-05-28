@@ -28,8 +28,19 @@ For any question related to the paper or the scripts, please contact zhaoyi[emai
 Please find our samples [here](https://nii-yamagishilab.github.io/yi-demo/interspeech-2020/index.html).
 
 # Usage
-./run.sh    
-(will add more information here)
+Please use ./run.sh  when train an extended vavae model.
+
+Or you can use python3 train.py -m [model type]. The -m option can be used to tell the the script to train a different model.
+
+Trained models are saved under the model_checkpoints directory.
+
+By default, the script will take the latest snapshot and continues training from there. To train a new model freshly, use the --scratch option.
+
+Every 50k steps, the model is run to generate test audio outputs. The output goes under the model_outputs directory.
+
+When the -g option is given, the script produces the output using the saved model, rather than training it.
+
+
 
 # Trained models
 We can provide trained models for only research purpose.  We have trained models for both original VQVAE and extended VQVAE. Please contact the zhaoyi[email mark]nii.ac.jp if you want to get either Japanese or Chinese trained models. 
