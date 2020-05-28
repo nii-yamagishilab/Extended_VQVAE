@@ -51,7 +51,7 @@ Please modify sampling rate and other parameters in [config.py](https://github.c
 
 
 # Trained models
-We can provide trained models for only research purpose.  We have trained models for both original VQVAE and extended VQVAE. Please contact the zhaoyi[email mark]nii.ac.jp if you want to get either Japanese or Chinese trained models. 
+We have Japanese or Chinese trained models for both original VQVAE and extended VQVAE. If you’re interested in using our pre-trained models for research purpose, please contact the zhaoyi[email mark]nii.ac.jp.
 
 # Multi-gpu parallel training
 Please see [multi_gpu_wavernn.py](https://github.com/nii-yamagishilab/Extended_VQVAE/blob/master/multi_gpu_wavernn.py)
