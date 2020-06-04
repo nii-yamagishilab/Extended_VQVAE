@@ -68,7 +68,6 @@ Japan. The numerical calculations were carried out on the TSUBAME 3.0 supercompu
 MIT License
 - Copyright (c) 2019 fatchord (https://github.com/fatchord)
 - Copyright (c) 2019 mkotha (https://github.com/mkotha)
-- Copyright (c) 2020 YiAthena (https://github.com/YiAthena)
 - Copyright (c) 2020, Yamagishi Laboratory, National Institute of Informatics.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
